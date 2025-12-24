@@ -1,34 +1,45 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { AIAnalysis, OperationRecord, SurgeryAnomaly } from "../types";
+import { AIAnalysis, OperationRecord } from "../types";
 import { DB_ANOMALIES } from "../constants";
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export async function analyzeSurgeryRiskFromDB(record: OperationRecord): Promise<AIAnalysis> {
   const anomaly = DB_ANOMALIES.find(a => a.operation_no === record.operation_no);
   
-  if (!anomaly) {
-    return {
-      riskLevel: '低',
-      riskReasons: ['暂未识别到异常数据'],
-      interventions: ['继续观察'],
-      summary: '数据库同步中。'
-    };
+  // 本地兜底分析结论
+  const localAnalysis: AIAnalysis = {
+    riskLevel: anomaly?.anomaly_level === '危急' ? '高' : (anomaly?.anomaly_level === '预警' ? '中' : '低'),
+    riskReasons: anomaly 
+      ? [anomaly.anomaly_reason, `时长偏差率: ${anomaly.deviation_rate.toFixed(1)}%`] 
+      : ['数据同步异常'],
+    interventions: [
+      '安排巡回护士核实术中情况',
+      '同步更新排班看板，预警后续手术延时',
+      '评估是否需要增派手术辅助人员'
+    ],
+    summary: anomaly 
+      ? `【规则预警】检测到 ${record.operation_name} 耗时异常，已触发自动化干预流程。`
+      : '暂无异常。'
+  };
+
+  // 安全获取 API Key
+  const apiKey = typeof process !== 'undefined' ? process.env?.API_KEY : undefined;
+
+  if (!apiKey || apiKey.length < 5) {
+    console.log("Gemini: 未检测到有效的 API Key，系统切换至本地规则引擎模式。");
+    return localAnalysis;
   }
 
-  const prompt = `
-    作为手术室运行专家，请分析以下数据库实时监测数据：
-    - 手术: ${record.operation_name}
-    - 实际时长: ${anomaly.actual_duration} min
-    - 基线P80/P90阈值: ${anomaly.baseline_p80}/${anomaly.baseline_p90} min
-    - 数据库异常等级: ${anomaly.anomaly_level}
-    - 数据库初步分析原因: ${anomaly.anomaly_reason}
-
-    请基于这些数据，提供更深层的管理建议。格式必须为 JSON。
-  `;
-
   try {
+    const ai = new GoogleGenAI({ apiKey });
+    const prompt = `
+      作为手术管理专家，分析此异常：
+      手术：${record.operation_name}
+      耗时：${anomaly?.actual_duration}min (基线P90: ${anomaly?.baseline_p90}min)
+      原因：${anomaly?.anomaly_reason}
+      请给出深层建议。返回 JSON。
+    `;
+
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,
@@ -47,13 +58,9 @@ export async function analyzeSurgeryRiskFromDB(record: OperationRecord): Promise
       }
     });
 
-    return JSON.parse(response.text);
+    return JSON.parse(response.text || "{}");
   } catch (error) {
-    return {
-      riskLevel: anomaly.anomaly_level === '危急' ? '高' : '低',
-      riskReasons: [anomaly.anomaly_reason],
-      interventions: ['立即派驻协调护士进入手术间', '评估麻醉复苏位可用性'],
-      summary: '基于数据库预设规则的分析。'
-    };
+    console.error("AI 服务调用失败:", error);
+    return localAnalysis;
   }
 }
