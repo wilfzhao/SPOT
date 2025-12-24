@@ -9,8 +9,8 @@ export enum SurgeryStatus {
 export interface Phase {
   id: string;
   name: string;
-  actualDuration: number; // 分钟
-  baselineDuration: number; // 分钟
+  actualDuration: number;
+  baselineDuration: number;
   status: SurgeryStatus;
 }
 
@@ -23,20 +23,23 @@ export interface Surgery {
   startTime: string;
   phases: Phase[];
   overallStatus: SurgeryStatus;
+  riskScore?: number; // 0-100
+  predictedPostOpStay?: number; // 天
 }
+
+export type ModuleType = 
+  | 'dashboard' 
+  | 'efficiency' 
+  | 'duration' 
+  | 'preop' 
+  | 'postop' 
+  | 'risk' 
+  | 'doctor' 
+  | 'specialty';
 
 export interface AIAnalysis {
   riskLevel: '低' | '中' | '高';
   riskReasons: string[];
   interventions: string[];
   summary: string;
-}
-
-export interface HistoricalBaseline {
-  procedureType: string;
-  phases: {
-    name: string;
-    avgDuration: number;
-    stdDev: number;
-  }[];
 }
