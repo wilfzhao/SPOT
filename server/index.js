@@ -10,11 +10,11 @@ app.use(express.json());
 // PostgreSQL 连接配置
 // 请根据你的本地实际情况修改以下参数
 const pool = new Pool({
-  user: 'postgres',         
+  user: 'wilf',         
   host: 'localhost',
-  database: 'surgery_db',   
-  password: 'password',     
-  port: 5432,
+  database: 'postgres',   
+  password: 'postgres',     
+  port: 5431,
 });
 
 // 测试数据库连接
