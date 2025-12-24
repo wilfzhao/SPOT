@@ -4,7 +4,10 @@ import { OperationRecord, SurgeryBaseline, SurgeryAnomaly } from './types';
 export const HOSPITAL_NAME = "联通数智医疗";
 export const PLATFORM_NAME = "手术全流程精准管理与分析预测平台";
 
-// 模拟 public.operation_record 数据
+// API 配置：如果你本地运行后端，请指向本地地址
+export const API_BASE_URL = "http://localhost:3000/api";
+
+// 模拟数据 (作为 API 连不通时的兜底)
 export const DB_OPERATION_RECORDS: OperationRecord[] = [
   {
     operation_no: '20241024-001',
@@ -32,7 +35,6 @@ export const DB_OPERATION_RECORDS: OperationRecord[] = [
   }
 ];
 
-// 模拟 public.dws_surgery_duration_anomaly 数据
 export const DB_ANOMALIES: SurgeryAnomaly[] = [
   {
     operation_no: '20241024-001',
