@@ -3,14 +3,19 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { AIAnalysis, OperationRecord } from "../types";
 import { DB_ANOMALIES } from "../constants";
 
-export async function analyzeSurgeryRiskFromDB(record: OperationRecord): Promise<AIAnalysis> {
+export type AIEngine = 'gemini' | 'deepseek';
+
+export async function analyzeSurgeryRiskFromDB(
+  record: OperationRecord, 
+  engine: AIEngine = 'gemini'
+): Promise<AIAnalysis> {
   const anomaly = DB_ANOMALIES.find(a => a.operation_no === record.operation_no);
   
   // 本地兜底分析结论
   const localAnalysis: AIAnalysis = {
     riskLevel: anomaly?.anomaly_level === '危急' ? '高' : (anomaly?.anomaly_level === '预警' ? '中' : '低'),
     riskReasons: anomaly 
-      ? [anomaly.anomaly_reason, `时长偏差率: ${anomaly.deviation_rate.toFixed(1)}%`] 
+      ? [anomaly.anomaly_reason, `时长偏差率: ${Number(anomaly.deviation_rate || 0).toFixed(1)}%`] 
       : ['数据同步异常'],
     interventions: [
       '安排巡回护士核实术中情况',
@@ -22,29 +27,41 @@ export async function analyzeSurgeryRiskFromDB(record: OperationRecord): Promise
       : '暂无异常。'
   };
 
-  // 安全获取 API Key
   const apiKey = typeof process !== 'undefined' ? process.env?.API_KEY : undefined;
 
   if (!apiKey || apiKey.length < 5) {
-    console.log("Gemini: 未检测到有效的 API Key，系统切换至本地规则引擎模式。");
     return localAnalysis;
   }
 
   try {
     const ai = new GoogleGenAI({ apiKey });
+    
+    // 配置模型：标准模式用 Flash，推理模式用 Pro 并开启思维链
+    const modelName = engine === 'deepseek' ? 'gemini-3-pro-preview' : 'gemini-3-flash-preview';
+    
+    const systemInstruction = engine === 'deepseek' 
+      ? "你是一个拥有20年临床经验的手术管理专家。请利用深度推理能力（Chain of Thought），从手术复杂程度、团队配合、生理风险、资源保障等多个维度深度拆解异常原因，并给出具有极高参考价值的干预措施。"
+      : "你是一个高效的手术室管理助手，请根据提供的数据给出简洁明了的异常分析。";
+
     const prompt = `
-      作为手术管理专家，分析此异常：
-      手术：${record.operation_name}
-      耗时：${anomaly?.actual_duration}min (基线P90: ${anomaly?.baseline_p90}min)
-      原因：${anomaly?.anomaly_reason}
-      请给出深层建议。返回 JSON。
+      手术数据分析请求：
+      手术项目：${record.operation_name}
+      主刀医生：${record.surgen_name}
+      当前时长：${anomaly?.actual_duration}分钟
+      历史基线(P90)：${anomaly?.baseline_p90}分钟
+      初步异常描述：${anomaly?.anomaly_reason}
+
+      请分析其深层风险并给出决策支持方案。返回 JSON。
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: modelName,
       contents: prompt,
       config: {
+        systemInstruction: systemInstruction,
         responseMimeType: "application/json",
+        // 如果是深度推理引擎，设置 thinkingBudget
+        ...(engine === 'deepseek' ? { thinkingConfig: { thinkingBudget: 16384 } } : {}),
         responseSchema: {
           type: Type.OBJECT,
           properties: {
@@ -60,7 +77,7 @@ export async function analyzeSurgeryRiskFromDB(record: OperationRecord): Promise
 
     return JSON.parse(response.text || "{}");
   } catch (error) {
-    console.error("AI 服务调用失败:", error);
+    console.error(`AI (${engine}) 调用失败:`, error);
     return localAnalysis;
   }
 }

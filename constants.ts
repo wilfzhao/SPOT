@@ -4,13 +4,9 @@ import { OperationRecord, SurgeryAnomaly } from './types';
 export const HOSPITAL_NAME = "联通数智医疗";
 export const PLATFORM_NAME = "手术全流程精准管理与分析预测平台";
 
-/**
- * API 配置
- * 在本地开发时，确保 server/index.js 正在运行并监听 3000 端口
- */
 export const API_BASE_URL = "http://localhost:3000/api";
 
-// 模拟数据 (作为 API 连不通时的兜底)
+// 模拟数据：将状态统一修改为 '术中' 以配合系统过滤逻辑
 export const DB_OPERATION_RECORDS: OperationRecord[] = [
   {
     operation_no: '20241024-001',
@@ -22,7 +18,7 @@ export const DB_OPERATION_RECORDS: OperationRecord[] = [
     patient_in_time: '2024-10-24 08:30:00',
     operation_start_time: '2024-10-24 09:00:00',
     operation_end_time: null,
-    status: '进行中'
+    status: '术中'
   },
   {
     operation_no: '20241024-002',
@@ -34,7 +30,7 @@ export const DB_OPERATION_RECORDS: OperationRecord[] = [
     patient_in_time: '2024-10-24 08:45:00',
     operation_start_time: '2024-10-24 09:15:00',
     operation_end_time: null,
-    status: '进行中'
+    status: '术中'
   }
 ];
 

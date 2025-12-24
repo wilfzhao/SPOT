@@ -57,6 +57,7 @@ export interface AIAnalysis {
   riskReasons: string[];
   interventions: string[];
   summary: string;
+  reasoning?: string;
 }
 
 // Added Phase type for timeline and rule engine

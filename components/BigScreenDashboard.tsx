@@ -51,7 +51,7 @@ export const BigScreenDashboard: React.FC<BigScreenDashboardProps> = ({ onNaviga
           <div className="grid grid-cols-2 gap-3 shrink-0">
             <BigStatCard label="额定手术间" value="44" unit="间" color="text-cyan-400" />
             <BigStatCard label="正在使用" value="38" unit="间" color="text-emerald-400" />
-            <BigStatCard label="周转预警" value="4" unit="间" color="text-amber-400" />
+            <BigStatCard label="周转黄灯" value="4" unit="间" color="text-amber-400" />
             <BigStatCard label="手术科室" value="38" unit="个" color="text-indigo-400" />
           </div>
 
@@ -64,7 +64,8 @@ export const BigScreenDashboard: React.FC<BigScreenDashboardProps> = ({ onNaviga
                   i % 7 === 0 ? 'bg-amber-500/20 border-amber-500' : 'bg-slate-800/40 border-slate-700'
                 }`}>
                   <span className="text-[8px] text-slate-500 font-bold">{i+1}号</span>
-                  {i === 3 && <span className="text-[8px] text-rose-500 font-bold">⚠️危急</span>}
+                  {i === 3 && <span className="text-[8px] text-rose-500 font-bold">⚠️红灯</span>}
+                  {i % 7 === 0 && i !== 0 && <span className="text-[8px] text-amber-500 font-bold">⚠️黄灯</span>}
                 </div>
               ))}
             </div>
@@ -93,7 +94,7 @@ export const BigScreenDashboard: React.FC<BigScreenDashboardProps> = ({ onNaviga
             </div>
             <h4 className="text-indigo-400 font-bold text-[10px] mb-1">智能助手 · 小依</h4>
             <p className="text-slate-300 leading-relaxed text-base">
-              识别到异常：1号手术室当前阶段已耗时 25min，超出历史基线 150%。规则引擎已将其标记为“危急”风险，建议立即查看该手术间的实时麻醉体征。
+              识别到异常：1号手术室当前阶段已耗时 25min，超出历史基线 150%。规则引擎已将其标记为“红灯”风险，建议立即查看该手术间的实时麻醉体征。
             </p>
           </div>
 
