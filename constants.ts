@@ -1,10 +1,13 @@
 
-import { OperationRecord, SurgeryBaseline, SurgeryAnomaly } from './types';
+import { OperationRecord, SurgeryAnomaly } from './types';
 
 export const HOSPITAL_NAME = "联通数智医疗";
 export const PLATFORM_NAME = "手术全流程精准管理与分析预测平台";
 
-// API 配置：如果你本地运行后端，请指向本地地址
+/**
+ * API 配置
+ * 在本地开发时，确保 server/index.js 正在运行并监听 3000 端口
+ */
 export const API_BASE_URL = "http://localhost:3000/api";
 
 // 模拟数据 (作为 API 连不通时的兜底)
