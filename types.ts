@@ -6,25 +6,40 @@ export enum SurgeryStatus {
   COMPLETED = '已完成'
 }
 
-export interface Phase {
-  id: string;
-  name: string;
-  actualDuration: number;
-  baselineDuration: number;
-  status: SurgeryStatus;
+// 对应 public.operation_record
+export interface OperationRecord {
+  operation_no: string;
+  operation_date: string;
+  operation_room: string;
+  operation_name: string;
+  diagnosis_name: string;
+  surgen_name: string;
+  patient_in_time: string;
+  operation_start_time: string;
+  operation_end_time: string | null;
+  status: string;
 }
 
-export interface Surgery {
-  id: string;
-  patientName: string;
-  procedureType: string;
-  surgeon: string;
-  operatingRoom: string;
-  startTime: string;
-  phases: Phase[];
-  overallStatus: SurgeryStatus;
-  riskScore?: number; // 0-100
-  predictedPostOpStay?: number; // 天
+// 对应 public.surgery_baseline_model
+export interface SurgeryBaseline {
+  operation_name: string;
+  surgen_name: string;
+  avg_duration: number;
+  warning_threshold_p80: number;
+  alert_threshold_p90: number;
+}
+
+// 对应 public.dws_surgery_duration_anomaly
+export interface SurgeryAnomaly {
+  operation_no: string;
+  operation_name: string;
+  actual_duration: number;
+  baseline_avg: number;
+  baseline_p80: number;
+  baseline_p90: number;
+  deviation_rate: number;
+  anomaly_level: string;
+  anomaly_reason: string;
 }
 
 export type ModuleType = 
@@ -42,4 +57,18 @@ export interface AIAnalysis {
   riskReasons: string[];
   interventions: string[];
   summary: string;
+}
+
+// Added Phase type for timeline and rule engine
+export interface Phase {
+  name: string;
+  actualDuration: number;
+  baselineDuration: number;
+}
+
+// Added Surgery type for timeline components
+export interface Surgery {
+  id: string;
+  name: string;
+  phases: Phase[];
 }

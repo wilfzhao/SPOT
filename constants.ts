@@ -1,32 +1,60 @@
 
-import { Surgery, SurgeryStatus } from './types';
+import { OperationRecord, SurgeryBaseline, SurgeryAnomaly } from './types';
 
 export const HOSPITAL_NAME = "联通数智医疗";
 export const PLATFORM_NAME = "手术全流程精准管理与分析预测平台";
 
-export const MOCK_SURGERIES: Surgery[] = [
+// 模拟 public.operation_record 数据
+export const DB_OPERATION_RECORDS: OperationRecord[] = [
   {
-    id: 'OR-101',
-    patientName: '张三',
-    procedureType: '阑尾切除术',
-    surgeon: '赵伟峰',
-    operatingRoom: '1号手术室',
-    startTime: '08:00',
-    overallStatus: SurgeryStatus.WARNING,
-    phases: [
-      { id: 'p1', name: '麻醉诱导', actualDuration: 18, baselineDuration: 15, status: SurgeryStatus.NORMAL },
-      { id: 'p2', name: '切开', actualDuration: 25, baselineDuration: 10, status: SurgeryStatus.CRITICAL },
-    ]
+    operation_no: '20241024-001',
+    operation_date: '2024-10-24',
+    operation_room: '1号手术室',
+    operation_name: '腹腔镜下胆囊切除术',
+    diagnosis_name: '胆囊结石伴急性胆囊炎',
+    surgen_name: '赵伟峰',
+    patient_in_time: '2024-10-24 08:30:00',
+    operation_start_time: '2024-10-24 09:00:00',
+    operation_end_time: null,
+    status: '进行中'
   },
   {
-    id: 'OR-102',
-    patientName: '李四',
-    procedureType: '甲状腺癌根治术',
-    surgeon: '林泽宏',
-    operatingRoom: '2号手术室',
-    startTime: '09:00',
-    overallStatus: SurgeryStatus.NORMAL,
-    phases: []
+    operation_no: '20241024-002',
+    operation_date: '2024-10-24',
+    operation_room: '3号手术室',
+    operation_name: '全髋关节置换术',
+    diagnosis_name: '双侧股骨头坏死',
+    surgen_name: '林泽宏',
+    patient_in_time: '2024-10-24 08:45:00',
+    operation_start_time: '2024-10-24 09:15:00',
+    operation_end_time: null,
+    status: '进行中'
+  }
+];
+
+// 模拟 public.dws_surgery_duration_anomaly 数据
+export const DB_ANOMALIES: SurgeryAnomaly[] = [
+  {
+    operation_no: '20241024-001',
+    operation_name: '腹腔镜下胆囊切除术',
+    actual_duration: 125,
+    baseline_avg: 60,
+    baseline_p80: 75,
+    baseline_p90: 90,
+    deviation_rate: 108.33,
+    anomaly_level: '危急',
+    anomaly_reason: '术中发现严重粘连，解剖结构辨识困难，耗时显著超过 P90 阈值'
+  },
+  {
+    operation_no: '20241024-002',
+    operation_name: '全髋关节置换术',
+    actual_duration: 85,
+    baseline_avg: 80,
+    baseline_p80: 95,
+    baseline_p90: 110,
+    deviation_rate: 6.25,
+    anomaly_level: '正常',
+    anomaly_reason: '进度符合预期'
   }
 ];
 
@@ -35,19 +63,11 @@ export const DEPT_RANKING = [
   { name: '眼科中心', count: 341, ratio: '9.29%', tier4: 8, tier4Ratio: '2.35%' },
   { name: '骨科', count: 272, ratio: '7.41%', tier4: 42, tier4Ratio: '15.44%' },
   { name: '泌尿外科', count: 227, ratio: '6.18%', tier4: 6, tier4Ratio: '2.64%' },
-  { name: '血管外科', count: 194, ratio: '5.28%', tier4: 2, tier4Ratio: '1.03%' },
-  { name: '乳腺外科', count: 135, ratio: '3.68%', tier4: 3, tier4Ratio: '2.22%' },
-  { name: '肝胆胰外科', count: 132, ratio: '3.59%', tier4: 12, tier4Ratio: '9.09%' },
-  { name: '肛肠外科', count: 125, ratio: '3.40%', tier4: 13, tier4Ratio: '10.40%' },
 ];
 
 export const PREDICTION_DATA = [
-  { or: '1号', surgeon: '赵伟峰', procedure: '肩关节镜下修复术', et: '18:05' },
-  { or: '5号', surgeon: '林泽宏', procedure: '甲状腺病损切除术', et: '22:25' },
-  { or: '3号', surgeon: '杨应麟', procedure: '静脉输液港植入术', et: '16:55' },
-  { or: '8号', surgeon: '余楠', procedure: '鞍区病损切除术', et: '17:20' },
-  { or: '2号', surgeon: '周亚冰', procedure: '后入路颈椎融合术', et: '18:00' },
-  { or: '12号', surgeon: '陈冠军', procedure: '腹腔镜胰体尾切除', et: '15:20' },
+  { or: '1号', surgeon: '赵伟峰', procedure: '胆囊切除术', et: '11:45' },
+  { or: '3号', surgeon: '林泽宏', procedure: '髋关节置换', et: '12:30' },
 ];
 
 export const OPERATIONAL_STATS = {
@@ -59,7 +79,6 @@ export const OPERATIONAL_STATS = {
   totalHours: 5045.5
 };
 
-// Add missing DOCTOR_SKILLS constant for CompetenceModule.tsx
 export const DOCTOR_SKILLS = [
   { subject: '手术速度', score: 85 },
   { subject: '质量安全', score: 92 },

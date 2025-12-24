@@ -1,10 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { analyzeSurgeryRisk } from '../services/geminiService';
-import { Surgery, AIAnalysis } from '../types';
+// Fixed: analyzeSurgeryRisk was renamed to analyzeSurgeryRiskFromDB in geminiService
+import { analyzeSurgeryRiskFromDB } from '../services/geminiService';
+// Fixed: using OperationRecord to match service signature and actual data source
+import { OperationRecord, AIAnalysis } from '../types';
 
 interface AIAssistantProps {
-  surgery: Surgery;
+  surgery: OperationRecord;
 }
 
 export const AIAssistant: React.FC<AIAssistantProps> = ({ surgery }) => {
@@ -15,7 +17,8 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ surgery }) => {
     const fetchAnalysis = async () => {
       setAnalysis(null);
       setLoading(true);
-      const result = await analyzeSurgeryRisk(surgery);
+      // Fixed: calling corrected service function name
+      const result = await analyzeSurgeryRiskFromDB(surgery);
       setAnalysis(result);
       setLoading(false);
     };

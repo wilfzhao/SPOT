@@ -1,33 +1,31 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Surgery, AIAnalysis } from "../types";
-import { identifyPhaseStatus } from "../utils/ruleEngine";
+import { AIAnalysis, OperationRecord, SurgeryAnomaly } from "../types";
+import { DB_ANOMALIES } from "../constants";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-export async function analyzeSurgeryRisk(surgery: Surgery): Promise<AIAnalysis> {
-  const currentPhase = surgery.phases[surgery.phases.length - 1];
-  if (!currentPhase) {
+export async function analyzeSurgeryRiskFromDB(record: OperationRecord): Promise<AIAnalysis> {
+  const anomaly = DB_ANOMALIES.find(a => a.operation_no === record.operation_no);
+  
+  if (!anomaly) {
     return {
       riskLevel: '低',
-      riskReasons: ['手术刚开始，暂无偏差数据'],
-      interventions: ['继续按标准临床路径执行'],
-      summary: '初始阶段，各项指标平稳。'
+      riskReasons: ['暂未识别到异常数据'],
+      interventions: ['继续观察'],
+      summary: '数据库同步中。'
     };
   }
 
-  const ruleStatus = identifyPhaseStatus(currentPhase.actualDuration, currentPhase.baselineDuration);
-  const deviation = ((currentPhase.actualDuration - currentPhase.baselineDuration) / currentPhase.baselineDuration * 100).toFixed(1);
-
   const prompt = `
-    你是一个专业的手术室运行管理专家 AI。
-    背景数据：
-    - 手术: ${surgery.procedureType}
-    - 当前阶段: ${currentPhase.name}
-    - 规则模型判定状态: ${ruleStatus} (偏差: ${deviation}%)
-    
-    请结合这些硬性规则判定，给出更具前瞻性的风险分析和干预建议。
-    输出必须为 JSON 格式。
+    作为手术室运行专家，请分析以下数据库实时监测数据：
+    - 手术: ${record.operation_name}
+    - 实际时长: ${anomaly.actual_duration} min
+    - 基线P80/P90阈值: ${anomaly.baseline_p80}/${anomaly.baseline_p90} min
+    - 数据库异常等级: ${anomaly.anomaly_level}
+    - 数据库初步分析原因: ${anomaly.anomaly_reason}
+
+    请基于这些数据，提供更深层的管理建议。格式必须为 JSON。
   `;
 
   try {
@@ -52,10 +50,10 @@ export async function analyzeSurgeryRisk(surgery: Surgery): Promise<AIAnalysis> 
     return JSON.parse(response.text);
   } catch (error) {
     return {
-      riskLevel: ruleStatus === '危急' ? '高' : (ruleStatus === '预警' ? '中' : '低'),
-      riskReasons: [`规则模型识别到耗时偏差达 ${deviation}%`],
-      interventions: ['请现场管理护士核实手术间进展', '评估后续手术排台是否需要调整'],
-      summary: '基于规则模型的自动评估。'
+      riskLevel: anomaly.anomaly_level === '危急' ? '高' : '低',
+      riskReasons: [anomaly.anomaly_reason],
+      interventions: ['立即派驻协调护士进入手术间', '评估麻醉复苏位可用性'],
+      summary: '基于数据库预设规则的分析。'
     };
   }
 }
