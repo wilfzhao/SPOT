@@ -2,12 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { DataService } from '../services/dataService';
 import { OperationRecord, SurgeryAnomaly, SurgeryStatus } from '../types';
-// Fixed: Added missing import for DB_ANOMALIES
 import { DB_ANOMALIES } from '../constants';
 import { StatusBadge } from './StatusBadge';
 import { AIAssistant } from './AIAssistant';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, Cell, ReferenceLine 
 } from 'recharts';
 
@@ -33,7 +32,7 @@ export const ORMonitoringModule: React.FC = () => {
 
   const selectedRecord = records.find(r => r.operation_no === selectedOpNo);
 
-  if (!selectedRecord || !currentAnomaly) return <div className="p-20 text-center text-slate-500">正在加载数据库实时数据...</div>;
+  if (!selectedRecord || !currentAnomaly) return <div className="p-20 text-center text-slate-500">正在从数据库检索实时手术记录...</div>;
 
   const chartData = [
     { name: '当前进度', 时长: currentAnomaly.actual_duration, color: '#6366f1' },
@@ -72,7 +71,7 @@ export const ORMonitoringModule: React.FC = () => {
           {/* 阈值对比图表 */}
           <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} layout="vertical" margin={{ left: 40, right: 40 }}>
+              <BarChart data={chartData} layout="vertical" margin={{ left: 60, right: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#1e293b" />
                 <XAxis type="number" hide />
                 <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
@@ -137,7 +136,6 @@ export const ORMonitoringModule: React.FC = () => {
           </div>
         </div>
         
-        {/* AI 助手接入最新的数据库字段 */}
         <div className="flex-1">
           <AIAssistant surgery={selectedRecord} />
         </div>
