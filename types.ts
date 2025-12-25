@@ -12,6 +12,7 @@ export interface OperationRecord {
   operation_date: string;
   operation_room: string;
   operation_name: string;
+  dept_name: string; // 增加申请科室
   diagnosis_name: string;
   surgen_name: string;
   patient_in_time: string;
@@ -60,14 +61,12 @@ export interface AIAnalysis {
   reasoning?: string;
 }
 
-// Added Phase type for timeline and rule engine
 export interface Phase {
   name: string;
   actualDuration: number;
   baselineDuration: number;
 }
 
-// Added Surgery type for timeline components
 export interface Surgery {
   id: string;
   name: string;

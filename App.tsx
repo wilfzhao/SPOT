@@ -60,7 +60,7 @@ const App: React.FC = () => {
 
   if (currentModule === 'dashboard') {
     return (
-      <>
+      <div className="h-screen w-screen overflow-hidden">
         <BigScreenDashboard onNavigate={setCurrentModule} />
         <SettingsModal 
           isOpen={isSettingsOpen} 
@@ -73,21 +73,21 @@ const App: React.FC = () => {
         >
           ⚙️
         </button>
-      </>
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex overflow-x-hidden" key={`app-root-${configKey}`}>
+    <div className="h-screen w-screen bg-slate-950 flex overflow-hidden" key={`app-root-${configKey}`}>
       <SettingsModal 
         isOpen={isSettingsOpen} 
         onClose={() => setIsSettingsOpen(false)} 
         onSave={handleConfigSave}
       />
       
-      {/* 侧边栏 */}
-      <aside className="w-20 lg:w-72 bg-slate-900 flex flex-col text-white transition-all duration-300 z-50 shrink-0 border-r border-slate-800">
-        <div className="p-6 flex items-center gap-3">
+      {/* 侧边栏：固定高度，自备滚动 */}
+      <aside className="w-20 lg:w-72 h-full bg-slate-900 flex flex-col text-white transition-all duration-300 z-50 shrink-0 border-r border-slate-800 overflow-hidden">
+        <div className="p-6 flex items-center gap-3 shrink-0">
           <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/30">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
@@ -123,7 +123,7 @@ const App: React.FC = () => {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-slate-800 shrink-0">
           <button 
             onClick={() => setIsSettingsOpen(true)}
             className="w-full flex items-center gap-4 p-3 rounded-xl text-slate-500 hover:text-white hover:bg-slate-800 transition-all"
@@ -134,9 +134,9 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      {/* 子模块主面板 */}
-      <main className="flex-1 flex flex-col min-h-0 overflow-visible">
-        <header className="h-20 bg-slate-900 border-b border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40 shrink-0">
+      {/* 主面板：固定高度容器 */}
+      <main className="flex-1 h-full flex flex-col min-w-0 overflow-hidden">
+        <header className="h-20 bg-slate-900 border-b border-slate-800 px-8 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setCurrentModule('dashboard')}
@@ -150,6 +150,7 @@ const App: React.FC = () => {
           </div>
         </header>
 
+        {/* 独立滚动的子内容区域 */}
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           <div className="max-w-[1400px] mx-auto pb-20">
             {renderModule()}

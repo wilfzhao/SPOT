@@ -1,25 +1,25 @@
 
-import { SurgeryStatus, Phase } from '../types';
+import { SurgeryStatus } from '../types';
 
 /**
- * 手术时长风险判定规则
- * 1. 偏差 < 10%: 正常
- * 2. 10% <= 偏差 < 25%: 预警 (Warning)
- * 3. 偏差 >= 25%: 危急 (Critical)
+ * 手术时长风险判定规则 (对齐数据库结构)
+ * 正常: 偏差 < 10%
+ * 黄灯: 10% <= 偏差 < 25%
+ * 红灯: 偏差 >= 25%
  */
-export const identifyPhaseStatus = (actual: number, baseline: number): SurgeryStatus => {
-  if (baseline === 0) return SurgeryStatus.NORMAL;
+export const identifyPhaseStatusLabel = (actual: number, baseline: number): string => {
+  if (baseline === 0) return '正常';
   const deviation = (actual - baseline) / baseline;
 
-  if (deviation >= 0.25) return SurgeryStatus.CRITICAL;
-  if (deviation >= 0.10) return SurgeryStatus.WARNING;
-  return SurgeryStatus.NORMAL;
+  if (deviation >= 0.25) return '红灯';
+  if (deviation >= 0.10) return '黄灯';
+  return '正常';
 };
 
-export const getDeviationColor = (status: SurgeryStatus): string => {
-  switch (status) {
-    case SurgeryStatus.CRITICAL: return 'text-rose-500';
-    case SurgeryStatus.WARNING: return 'text-amber-500';
+export const getStatusColor = (level: string): string => {
+  switch (level) {
+    case '红灯': return 'text-rose-500';
+    case '黄灯': return 'text-amber-500';
     default: return 'text-emerald-500';
   }
 };
