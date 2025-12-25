@@ -1,22 +1,32 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ModuleType } from './types';
 import { BigScreenDashboard } from './components/BigScreenDashboard';
 import { ORMonitoringModule } from './components/ORMonitoringModule';
 import { CompetenceModule } from './components/CompetenceModule';
+import { SettingsModal } from './components/SettingsModal';
 
 const App: React.FC = () => {
   const [currentModule, setCurrentModule] = useState<ModuleType>('dashboard');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // 用于强制重新渲染受配置影响的组件，避免使用 window.location.reload()
+  const [configKey, setConfigKey] = useState(0);
+
+  const handleConfigSave = useCallback(() => {
+    setConfigKey(prev => prev + 1);
+  }, []);
 
   const renderModule = () => {
+    // 关键：将 configKey 注入到需要感知引擎变化的模块
     switch (currentModule) {
       case 'dashboard':
-        return <BigScreenDashboard onNavigate={setCurrentModule} />;
+        return <BigScreenDashboard key={`dashboard-${configKey}`} onNavigate={setCurrentModule} />;
       case 'duration':
-        return <ORMonitoringModule />;
+        return <ORMonitoringModule key={`duration-${configKey}`} />;
       case 'doctor':
       case 'specialty':
-        return <CompetenceModule />;
+        return <CompetenceModule key={`competence-${configKey}`} />;
       default:
         return (
           <div className="flex flex-col items-center justify-center h-[60vh] text-slate-400 bg-slate-900/50 rounded-3xl border border-dashed border-slate-700">
@@ -49,11 +59,32 @@ const App: React.FC = () => {
   };
 
   if (currentModule === 'dashboard') {
-    return <BigScreenDashboard onNavigate={setCurrentModule} />;
+    return (
+      <>
+        <BigScreenDashboard onNavigate={setCurrentModule} />
+        <SettingsModal 
+          isOpen={isSettingsOpen} 
+          onClose={() => setIsSettingsOpen(false)} 
+          onSave={handleConfigSave}
+        />
+        <button 
+          onClick={() => setIsSettingsOpen(true)}
+          className="fixed bottom-6 right-6 w-12 h-12 bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center text-xl hover:bg-slate-800 transition-all z-[60] shadow-2xl"
+        >
+          ⚙️
+        </button>
+      </>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex overflow-x-hidden">
+    <div className="min-h-screen bg-slate-950 flex overflow-x-hidden" key={`app-root-${configKey}`}>
+      <SettingsModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+        onSave={handleConfigSave}
+      />
+      
       {/* 侧边栏 */}
       <aside className="w-20 lg:w-72 bg-slate-900 flex flex-col text-white transition-all duration-300 z-50 shrink-0 border-r border-slate-800">
         <div className="p-6 flex items-center gap-3">
@@ -91,9 +122,19 @@ const App: React.FC = () => {
             />
           ))}
         </nav>
+
+        <div className="p-4 border-t border-slate-800">
+          <button 
+            onClick={() => setIsSettingsOpen(true)}
+            className="w-full flex items-center gap-4 p-3 rounded-xl text-slate-500 hover:text-white hover:bg-slate-800 transition-all"
+          >
+            <span className="text-lg">⚙️</span>
+            <span className="text-sm font-bold hidden lg:block">系统设置</span>
+          </button>
+        </div>
       </aside>
 
-      {/* 子模块主面板 - 移除容器层级的禁止溢出限制 */}
+      {/* 子模块主面板 */}
       <main className="flex-1 flex flex-col min-h-0 overflow-visible">
         <header className="h-20 bg-slate-900 border-b border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40 shrink-0">
           <div className="flex items-center gap-4">
@@ -109,7 +150,6 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        {/* 内容区使用 overflow-y-auto 承载滚动 */}
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           <div className="max-w-[1400px] mx-auto pb-20">
             {renderModule()}

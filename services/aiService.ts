@@ -6,36 +6,51 @@ import { DB_ANOMALIES } from "../constants";
 export type AIEngine = 'gemini' | 'deepseek';
 
 /**
- * 安全配置指南：
- * 1. 本地开发：请在项目根目录创建 .env 文件，添加：DEEPSEEK_API_KEY=您的密钥
- * 2. 生产环境：在部署平台的设置中添加环境变量 DEEPSEEK_API_KEY
- * 3. 永远不要将带有真实 Key 的代码提交到 GitHub。
+ * 获取首选 AI 引擎
  */
-const DEEPSEEK_API_KEY = (process.env as any).DEEPSEEK_API_KEY || ""; 
+export const getPreferredEngine = (): AIEngine => {
+  if (typeof window !== 'undefined') {
+    const savedEngine = localStorage.getItem('PREFERRED_AI_ENGINE');
+    if (savedEngine === 'deepseek' || savedEngine === 'gemini') return savedEngine;
+  }
+  return 'gemini'; // 默认使用 Gemini
+};
+
+/**
+ * 获取 DeepSeek API Key
+ */
+const getDeepSeekKey = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('DEEPSEEK_API_KEY') || "";
+  }
+  return (process.env as any).DEEPSEEK_API_KEY || "";
+};
 
 export async function analyzeSurgery(
   record: OperationRecord,
-  engine: AIEngine = 'gemini'
+  requestedEngine?: AIEngine
 ): Promise<AIAnalysis & { reasoning?: string }> {
   const anomaly = DB_ANOMALIES.find(a => a.operation_no === record.operation_no);
   const geminiApiKey = process.env.API_KEY;
+  const engine = requestedEngine || getPreferredEngine();
+  const deepseekKey = getDeepSeekKey();
 
-  // 1. 如果用户手动切换到了 DeepSeek
+  // 1. 如果配置为使用 DeepSeek
   if (engine === 'deepseek') {
-    if (DEEPSEEK_API_KEY && DEEPSEEK_API_KEY.length > 5) {
-      return await callDeepSeekAPI(record, anomaly, DEEPSEEK_API_KEY);
+    if (deepseekKey && deepseekKey.length > 5) {
+      return await callDeepSeekAPI(record, anomaly, deepseekKey);
     } else {
-      console.warn("⚠️ DeepSeek API Key 未在环境变量中配置 (DEEPSEEK_API_KEY)。已回退至 Gemini 推理模式。");
+      console.warn("⚠️ DeepSeek Key 未配置。已自动回退至 Gemini 3.0 Pro 推理模式。");
       return await callGeminiAPI(record, anomaly, geminiApiKey || "", true);
     }
   }
 
-  // 2. 默认使用 Gemini 标准模式
+  // 2. 默认使用 Gemini 标准模式 (Flash)
   if (!geminiApiKey || geminiApiKey.length < 5) {
     return {
       riskLevel: '低',
       riskReasons: ['API 密钥未就绪'],
-      interventions: ['请在环境变量中配置 API_KEY (Gemini) 或 DEEPSEEK_API_KEY'],
+      interventions: ['请在设置中配置密钥'],
       summary: '系统当前处于本地演示模式，AI 推理功能暂未启用。'
     };
   }

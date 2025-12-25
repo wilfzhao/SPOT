@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { analyzeSurgery, AIEngine } from '../services/aiService';
+import { analyzeSurgery, AIEngine, getPreferredEngine } from '../services/aiService';
 import { OperationRecord, AIAnalysis } from '../types';
 
 interface AIAssistantProps {
@@ -10,14 +10,16 @@ interface AIAssistantProps {
 export const AIAssistant: React.FC<AIAssistantProps> = ({ surgery }) => {
   const [analysis, setAnalysis] = useState<(AIAnalysis & { reasoning?: string }) | null>(null);
   const [loading, setLoading] = useState(true);
-  const [engine, setEngine] = useState<AIEngine>('gemini');
+  
+  // 从系统配置中获取生效的引擎
+  const activeEngine = getPreferredEngine();
 
   useEffect(() => {
     const fetchAnalysis = async () => {
       setAnalysis(null);
       setLoading(true);
       try {
-        const result = await analyzeSurgery(surgery, engine);
+        const result = await analyzeSurgery(surgery);
         setAnalysis(result);
       } catch (err) {
         console.error("AI Analysis failed:", err);
@@ -26,59 +28,47 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ surgery }) => {
       }
     };
     fetchAnalysis();
-  }, [surgery, engine]);
+  }, [surgery]);
 
   return (
     <div className={`rounded-[2.5rem] border transition-all duration-700 shadow-[0_35px_60px_-15px_rgba(0,0,0,0.6)] relative w-full overflow-hidden ${
-      engine === 'deepseek' 
+      activeEngine === 'deepseek' 
         ? 'bg-slate-900/90 border-cyan-500/30 ring-1 ring-cyan-500/20' 
         : 'bg-slate-900/60 border-slate-800'
     }`}>
       {/* 装饰性背景 */}
-      {engine === 'deepseek' && (
+      {activeEngine === 'deepseek' && (
         <div className="absolute -top-60 -left-60 w-[500px] h-[500px] bg-cyan-600/5 blur-[150px] pointer-events-none rounded-full"></div>
       )}
 
-      {/* 头部控制栏 */}
+      {/* 头部状态栏 */}
       <div className="px-10 py-6 border-b border-white/5 flex justify-between items-center bg-white/5 backdrop-blur-xl">
         <div className="flex items-center gap-5">
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-black shadow-2xl ${
-            engine === 'deepseek' ? 'bg-cyan-600 text-white shadow-cyan-500/30' : 'bg-indigo-600 text-white shadow-indigo-500/30'
+            activeEngine === 'deepseek' ? 'bg-cyan-600 text-white shadow-cyan-500/30' : 'bg-indigo-600 text-white shadow-indigo-500/30'
           }`}>
-            {engine === 'deepseek' ? 'R1' : 'G'}
+            {activeEngine === 'deepseek' ? 'R1' : 'G'}
           </div>
           <div>
             <h3 className="font-black text-white text-lg leading-none flex items-center gap-3">
               AI 智能决策指挥中心
-              {engine === 'deepseek' && (
+              {activeEngine === 'deepseek' && (
                 <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2.5 py-1 rounded border border-cyan-500/30 font-black uppercase tracking-widest">
-                  Deep Reasoning Active
+                  Deep Reasoning Engine
                 </span>
               )}
             </h3>
             <p className="text-[10px] text-slate-500 mt-1.5 uppercase tracking-[0.3em] font-black opacity-80">
-              {engine === 'deepseek' ? 'DeepSeek R1 Logic Engine' : 'Google Gemini 3.0 Pro Reasoning'}
+              {activeEngine === 'deepseek' ? 'DeepSeek R1 Logic Activated' : 'Google Gemini 3.0 Pro Reasoning Active'}
             </p>
           </div>
         </div>
 
-        <div className="flex bg-slate-950 p-1.5 rounded-[1.5rem] border border-white/10 shadow-inner">
-          <button 
-            onClick={() => setEngine('gemini')}
-            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${
-              engine === 'gemini' ? 'bg-white/10 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
-            }`}
-          >
-            Gemini
-          </button>
-          <button 
-            onClick={() => setEngine('deepseek')}
-            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${
-              engine === 'deepseek' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/30' : 'text-slate-500 hover:text-slate-300'
-            }`}
-          >
-            DeepSeek
-          </button>
+        <div className="flex items-center gap-3 bg-black/40 px-5 py-2.5 rounded-2xl border border-white/5 shadow-inner">
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Engine:</span>
+          <span className={`text-[11px] font-black uppercase tracking-widest ${activeEngine === 'deepseek' ? 'text-cyan-400' : 'text-indigo-400'}`}>
+            {activeEngine === 'deepseek' ? 'DeepSeek R1' : 'Gemini 3.0'}
+          </span>
         </div>
       </div>
 
@@ -96,7 +86,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ surgery }) => {
             <div className="space-y-10 flex flex-col">
               <div className="relative">
                 <div className={`absolute -left-6 top-0 bottom-0 w-2 rounded-full ${
-                  engine === 'deepseek' ? 'bg-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.6)]' : 'bg-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.6)]'
+                  activeEngine === 'deepseek' ? 'bg-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.6)]' : 'bg-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.6)]'
                 }`}></div>
                 <h4 className="text-[12px] font-black text-slate-500 uppercase tracking-[0.4em] mb-6">决策核心摘要 / Conclusion</h4>
                 <p className="text-white text-2xl leading-relaxed font-black tracking-tight">
@@ -104,7 +94,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ surgery }) => {
                 </p>
               </div>
 
-              {engine === 'deepseek' && analysis?.reasoning && (
+              {activeEngine === 'deepseek' && analysis?.reasoning && (
                 <div className="bg-black/50 border border-cyan-500/10 rounded-[2.5rem] p-8 flex-1 relative group overflow-hidden shadow-2xl">
                   <div className="text-[10px] font-black text-cyan-500/40 uppercase tracking-[0.4em] mb-5 flex items-center gap-4">
                     <span className="shrink-0">思维链推理日志 / Logic Chain</span>
