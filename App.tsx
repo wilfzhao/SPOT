@@ -48,14 +48,13 @@ const App: React.FC = () => {
     }
   };
 
-  // 如果是大屏模式，不使用侧边栏，直接全屏渲染
   if (currentModule === 'dashboard') {
     return <BigScreenDashboard onNavigate={setCurrentModule} />;
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex overflow-hidden">
-      {/* 侧边栏 (仅在子模块显示) */}
+    <div className="min-h-screen bg-slate-950 flex overflow-x-hidden">
+      {/* 侧边栏 */}
       <aside className="w-20 lg:w-72 bg-slate-900 flex flex-col text-white transition-all duration-300 z-50 shrink-0 border-r border-slate-800">
         <div className="p-6 flex items-center gap-3">
           <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/30">
@@ -67,7 +66,7 @@ const App: React.FC = () => {
           <span className="font-bold text-lg hidden lg:block truncate">SurgiTrack Pro</span>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto scrollbar-hide">
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar">
           <NavItem 
             active={false} 
             onClick={() => setCurrentModule('dashboard')} 
@@ -94,9 +93,9 @@ const App: React.FC = () => {
         </nav>
       </aside>
 
-      {/* 子模块主面板 */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-20 bg-slate-900 border-b border-slate-800 px-8 flex items-center justify-between sticky top-0 z-10 shrink-0">
+      {/* 子模块主面板 - 移除容器层级的禁止溢出限制 */}
+      <main className="flex-1 flex flex-col min-h-0 overflow-visible">
+        <header className="h-20 bg-slate-900 border-b border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40 shrink-0">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setCurrentModule('dashboard')}
@@ -110,8 +109,9 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-[1400px] mx-auto">
+        {/* 内容区使用 overflow-y-auto 承载滚动 */}
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+          <div className="max-w-[1400px] mx-auto pb-20">
             {renderModule()}
           </div>
         </div>

@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { DataService } from '../services/dataService';
 import { OperationRecord, SurgeryAnomaly } from '../types';
-import { DB_ANOMALIES } from '../constants';
 import { AIAssistant } from './AIAssistant';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -15,16 +14,13 @@ export const ORMonitoringModule: React.FC = () => {
   const [selectedOpNo, setSelectedOpNo] = useState<string>('');
   const [currentAnomaly, setCurrentAnomaly] = useState<SurgeryAnomaly | null>(null);
   const [isRecordsLoading, setIsRecordsLoading] = useState<boolean>(true);
-  const [isAnomalyLoading, setIsAnomalyLoading] = useState<boolean>(false);
 
-  // 内部转换函数：统一 UI 标签名称
   const getLevelDisplay = (level?: string) => {
     if (level === '危急') return '红灯';
     if (level === '预警') return '黄灯';
     return level || '正常';
   };
 
-  // 1. 初始化：加载手术列表
   useEffect(() => {
     const initData = async () => {
       setIsRecordsLoading(true);
@@ -62,12 +58,10 @@ export const ORMonitoringModule: React.FC = () => {
     initData();
   }, []);
 
-  // 2. 当选中项改变时，更新主面板数据
   useEffect(() => {
     if (!selectedOpNo) return;
 
     const fetchDetail = async () => {
-      setIsAnomalyLoading(true);
       try {
         const data = await DataService.getAnomalyByNo(selectedOpNo);
         if (data) {
@@ -89,8 +83,6 @@ export const ORMonitoringModule: React.FC = () => {
         }
       } catch (err) {
         console.error("Fetch anomaly error:", err);
-      } finally {
-        setIsAnomalyLoading(false);
       }
     };
 
@@ -111,133 +103,127 @@ export const ORMonitoringModule: React.FC = () => {
   const chartData = currentAnomaly ? [
     { name: '当前进度', 时长: Number(currentAnomaly.actual_duration) || 0, color: currentAnomaly.anomaly_level === '正常' ? '#10b981' : (currentAnomaly.anomaly_level === '危急' ? '#f43f5e' : '#f59e0b') },
     { name: '平均基准', 时长: Number(currentAnomaly.baseline_avg) || 0, color: '#94a3b8' },
-    { name: 'P80黄灯线', 时长: Number(currentAnomaly.baseline_p80) || 0, color: '#f59e0b' },
-    { name: 'P90红灯线', 时长: Number(currentAnomaly.baseline_p90) || 0, color: '#f43f5e' },
+    { name: 'P80阈值', 时长: Number(currentAnomaly.baseline_p80) || 0, color: '#f59e0b' },
+    { name: 'P90阈值', 时长: Number(currentAnomaly.baseline_p90) || 0, color: '#f43f5e' },
   ] : [];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in slide-in-from-right duration-500 pb-20">
-      {/* 左侧及中间：主要图表和详情 */}
-      <div className="lg:col-span-2 space-y-6 h-fit">
-        <div className="bg-slate-900/40 border border-slate-800 p-8 rounded-[2rem] backdrop-blur-md relative">
+    <div className="flex flex-col gap-8 animate-in slide-in-from-right duration-500 pb-24">
+      {/* 顶部：仪表盘与列表 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* 核心监测卡片 */}
+        <div className="lg:col-span-2 bg-slate-900/40 border border-slate-800 p-8 rounded-[2.5rem] backdrop-blur-md relative shadow-2xl">
           <div className="flex justify-between items-start mb-8">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <h3 className="font-bold text-white text-2xl">{selectedRecord?.operation_room}</h3>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                  currentAnomaly?.anomaly_level === '危急' ? 'bg-rose-500 text-white' :
-                  currentAnomaly?.anomaly_level === '预警' ? 'bg-amber-500 text-white' : 'bg-emerald-500 text-white'
+                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                  currentAnomaly?.anomaly_level === '危急' ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' :
+                  currentAnomaly?.anomaly_level === '预警' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
                 }`}>
                   {getLevelDisplay(currentAnomaly?.anomaly_level)}
                 </span>
               </div>
-              <p className="text-slate-400 font-medium">{selectedRecord?.operation_name}</p>
-              <p className="text-xs text-slate-500 mt-1">主刀：{selectedRecord?.surgen_name} | 编号：{selectedRecord?.operation_no}</p>
+              <p className="text-slate-300 font-medium text-lg">{selectedRecord?.operation_name}</p>
+              <div className="flex gap-4 mt-2">
+                <span className="text-xs text-slate-500">主刀：<span className="text-slate-300 font-bold">{selectedRecord?.surgen_name}</span></span>
+                <span className="text-xs text-slate-500">编号：<span className="text-slate-300">{selectedRecord?.operation_no}</span></span>
+              </div>
             </div>
-            <div className="text-right">
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">偏差率 (Deviation)</div>
-              <div className={`text-3xl font-digital ${currentAnomaly && currentAnomaly.deviation_rate > 20 ? 'text-rose-500' : 'text-emerald-500'}`}>
+            <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/10 text-right ring-1 ring-white/5">
+              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Duration Deviation</div>
+              <div className={`text-4xl font-digital ${currentAnomaly && currentAnomaly.deviation_rate > 20 ? 'text-rose-500' : 'text-emerald-500'}`}>
                 {currentAnomaly ? Number(currentAnomaly.deviation_rate).toFixed(1) : '0.0'}%
               </div>
             </div>
           </div>
 
-          <div className="h-[350px] w-full">
+          <div className="h-[400px] w-full bg-black/30 rounded-3xl p-6 border border-white/5">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} layout="vertical" margin={{ left: 80, right: 40 }}>
+              <BarChart data={chartData} layout="vertical" margin={{ left: 80, right: 40, top: 10, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#1e293b" />
+                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 13, fontWeight: 'bold' }} />
                 <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
                 <Tooltip 
-                  cursor={{ fill: 'rgba(255, 255, 255, 0.03)' }}
+                  cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
                   contentStyle={{ 
-                    backgroundColor: '#0f172a', 
-                    border: '1px solid #334155', 
-                    borderRadius: '14px',
-                    padding: '12px 16px',
-                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4)'
+                    backgroundColor: '#020617', 
+                    border: '2px solid #334155', 
+                    borderRadius: '16px',
+                    padding: '16px 20px',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
                   }}
                   itemStyle={{
                     color: '#f8fafc',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    padding: '2px 0'
+                    fontSize: '16px',
+                    fontWeight: '900',
+                    padding: '6px 0'
                   }}
                   labelStyle={{
                     color: '#94a3b8',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    marginBottom: '4px',
+                    fontSize: '11px',
+                    fontWeight: 'black',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.05em'
+                    letterSpacing: '0.2em',
+                    marginBottom: '10px',
+                    borderBottom: '1px solid #1e293b',
+                    paddingBottom: '8px'
                   }}
-                  formatter={(value: number) => [`${value} 分钟`, '时长']}
+                  formatter={(value: number) => [`${value} 分钟`, '监测时长']}
                 />
-                <Bar dataKey="时长" radius={[0, 8, 8, 0]} barSize={35}>
+                <Bar dataKey="时长" radius={[0, 10, 10, 0]} barSize={38}>
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Bar>
                 {currentAnomaly && (
-                  <ReferenceLine x={Number(currentAnomaly.baseline_p90)} stroke="#f43f5e" strokeDasharray="5 5" label={{ position: 'top', value: 'P90红灯线', fill: '#f43f5e', fontSize: 10 }} />
+                  <ReferenceLine x={Number(currentAnomaly.baseline_p90)} stroke="#f43f5e" strokeDasharray="6 4" label={{ position: 'top', value: 'P90阈值', fill: '#f43f5e', fontSize: 11, fontWeight: 'black' }} />
                 )}
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-slate-900/40 border border-slate-800 p-8 rounded-[2rem]">
-          <h3 className="font-bold text-white text-lg mb-6 flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
-            实时风险因素及建议 (Contextual Analysis)
-          </h3>
-          <div className="p-6 bg-slate-950/50 border border-slate-800 rounded-2xl min-h-[100px] flex items-center">
-            <p className="text-slate-300 leading-relaxed italic">
-              {currentAnomaly?.anomaly_reason}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* 右侧列：手术列表 + AI 助手 */}
-      <div className="space-y-6 h-fit">
-        <div className="bg-slate-900/40 rounded-3xl border border-slate-800 flex flex-col overflow-hidden shadow-2xl">
-          <div className="p-6 pb-4 border-b border-slate-800">
-            <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex justify-between items-center">
-              <span>当前正在进行的手术库</span>
-              <span className="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full">{records.length}</span>
+        {/* 右侧手术列表 */}
+        <div className="bg-slate-900/40 rounded-[2.5rem] border border-slate-800 flex flex-col overflow-hidden shadow-2xl h-[580px]">
+          <div className="p-7 border-b border-slate-800 bg-white/5">
+            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] flex justify-between items-center">
+              <span>手术室状态库</span>
+              <span className="bg-indigo-500 text-white text-[10px] px-3 py-0.5 rounded-full font-bold">{records.length}</span>
             </h4>
           </div>
           
-          <div className="max-h-[300px] overflow-y-auto p-4 space-y-3 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar bg-slate-950/20">
             {records.map(r => {
               const anomaly = anomalyMap[r.operation_no];
               const level = anomaly?.anomaly_level || '正常';
-              const displayLevel = getLevelDisplay(level);
+              const isSelected = selectedOpNo === r.operation_no;
               
               return (
                 <button 
                   key={r.operation_no}
                   onClick={() => setSelectedOpNo(r.operation_no)}
-                  className={`w-full text-left p-4 rounded-2xl border transition-all duration-300 transform active:scale-95 ${
-                    selectedOpNo === r.operation_no 
-                      ? 'border-indigo-500 bg-indigo-500/10 shadow-lg shadow-indigo-500/10' 
-                      : 'border-slate-800 bg-slate-900/40 hover:border-slate-700 hover:bg-slate-800/40'
+                  className={`w-full text-left p-5 rounded-3xl border transition-all duration-300 transform group active:scale-[0.98] ${
+                    isSelected 
+                      ? 'border-indigo-500 bg-indigo-500/10 ring-2 ring-indigo-500/20' 
+                      : 'border-slate-800 bg-slate-900/40 hover:border-slate-600 hover:bg-slate-800/60'
                   }`}
                 >
-                  <div className="flex justify-between items-start mb-1">
-                    <div className="max-w-[70%]">
-                      <div className="font-bold text-white text-sm leading-tight truncate">{r.operation_room}</div>
-                      <div className="text-[10px] text-slate-500 mt-1">{r.surgen_name}</div>
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="max-w-[80%]">
+                      <div className={`font-black text-sm transition-colors ${isSelected ? 'text-white' : 'text-slate-300 group-hover:text-white'}`}>
+                        {r.operation_room}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-1 font-bold italic tracking-wide">{r.surgen_name} 团队</div>
                     </div>
-                    <span className={`text-[8px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                      level === '危急' ? 'bg-rose-500/20 text-rose-500' : 
-                      level === '预警' ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/20 text-emerald-500'
-                    }`}>
-                      {displayLevel}
-                    </span>
+                    <div className={`w-3 h-3 rounded-full mt-1 shrink-0 ${
+                      level === '危急' ? 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.7)] animate-pulse' : 
+                      level === '预警' ? 'bg-amber-500' : 'bg-emerald-500'
+                    }`}></div>
                   </div>
-                  <div className="text-[10px] text-slate-400 truncate mt-3 pt-2 border-t border-slate-800/50">
+                  <div className={`text-[11px] truncate pt-3 border-t transition-colors leading-tight ${
+                    isSelected ? 'border-indigo-500/20 text-slate-300' : 'border-slate-800/50 text-slate-500'
+                  }`}>
                     {r.operation_name}
                   </div>
                 </button>
@@ -245,11 +231,11 @@ export const ORMonitoringModule: React.FC = () => {
             })}
           </div>
         </div>
-        
-        {/* AI 助手部分 - 让它自然高度展开 */}
-        <div className="h-fit">
-          {selectedRecord && <AIAssistant surgery={selectedRecord} />}
-        </div>
+      </div>
+
+      {/* 底部：横向 AI 指挥中心 */}
+      <div className="w-full">
+        {selectedRecord && <AIAssistant surgery={selectedRecord} />}
       </div>
     </div>
   );

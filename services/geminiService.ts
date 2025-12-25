@@ -27,13 +27,15 @@ export async function analyzeSurgeryRiskFromDB(
       : '暂无异常。'
   };
 
-  const apiKey = typeof process !== 'undefined' ? process.env?.API_KEY : undefined;
+  // Fix: Strictly use process.env.API_KEY as per guidelines.
+  const apiKey = process.env.API_KEY;
 
   if (!apiKey || apiKey.length < 5) {
     return localAnalysis;
   }
 
   try {
+    // Fix: Initialize GoogleGenAI with named parameter.
     const ai = new GoogleGenAI({ apiKey });
     
     // 配置模型：标准模式用 Flash，推理模式用 Pro 并开启思维链
@@ -75,6 +77,7 @@ export async function analyzeSurgeryRiskFromDB(
       }
     });
 
+    // Fix: Use .text property instead of .text() method.
     return JSON.parse(response.text || "{}");
   } catch (error) {
     console.error(`AI (${engine}) 调用失败:`, error);
