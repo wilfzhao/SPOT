@@ -12,7 +12,7 @@ export interface OperationRecord {
   operation_date: string;
   operation_room: string;
   operation_name: string;
-  dept_name: string; // 增加申请科室
+  dept_name: string;
   diagnosis_name: string;
   surgen_name: string;
   patient_in_time: string;
@@ -25,7 +25,8 @@ export interface OperationRecord {
 export interface SurgeryBaseline {
   operation_name: string;
   surgen_name: string;
-  avg_duration: number;
+  median_duration: number;
+  std_dev: number;
   warning_threshold_p80: number;
   alert_threshold_p90: number;
 }
@@ -35,7 +36,8 @@ export interface SurgeryAnomaly {
   operation_no: string;
   operation_name: string;
   actual_duration: number;
-  baseline_avg: number;
+  baseline_median: number; // 更新字段名
+  baseline_std_dev: number; // 更新字段名
   baseline_p80: number;
   baseline_p90: number;
   deviation_rate: number;

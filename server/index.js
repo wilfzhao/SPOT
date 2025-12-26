@@ -31,11 +31,8 @@ app.get('/api/health', (req, res) => {
 // 获取所有实时手术记录 (仅限术中状态)
 app.get('/api/operations', async (req, res) => {
   try {
-    // 关键过滤：WHERE status = '术中'
     const queryText = "SELECT * FROM operation_record WHERE status = '术中' ORDER BY operation_start_time DESC";
     const result = await pool.query(queryText);
-    
-    console.log(`[API] 查询到术中记录数: ${result.rows.length}`);
     res.json(result.rows);
   } catch (err) {
     console.error('查询手术记录失败:', err);
@@ -43,13 +40,33 @@ app.get('/api/operations', async (req, res) => {
   }
 });
 
+// 获取异常详情
 app.get('/api/anomalies/:opNo', async (req, res) => {
   const { opNo } = req.params;
   try {
-    const result = await pool.query(
-      'SELECT * FROM dws_surgery_duration_anomaly WHERE operation_no = $1',
-      [opNo]
-    );
+    // 优先读取异常表中的 baseline_median 和 baseline_std_dev
+    const queryText = `
+      SELECT 
+        a.operation_no,
+        a.operation_name,
+        a.actual_duration,
+        a.baseline_p80,
+        a.baseline_p90,
+        a.deviation_rate,
+        a.anomaly_level,
+        a.anomaly_reason,
+        COALESCE(a.baseline_median, b.median_duration) as baseline_median,
+        COALESCE(a.baseline_std_dev, b.std_dev, 0) as baseline_std_dev
+      FROM dws_surgery_duration_anomaly a
+      LEFT JOIN operation_record o ON a.operation_no = o.operation_no
+      LEFT JOIN surgery_baseline_model b ON (
+        o.operation_name = b.operation_name 
+        AND o.surgen_name = b.surgen_name
+      )
+      WHERE a.operation_no = $1
+    `;
+    const result = await pool.query(queryText, [opNo]);
+    
     if (result.rows.length === 0) {
       return res.status(404).json({ message: '未找到该手术的异常数据' });
     }
@@ -64,6 +81,6 @@ const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`-----------------------------------------------`);
   console.log(`手术监测系统后端已启动: http://localhost:${PORT}`);
-  console.log(`请确保数据库中状态字段值为 '术中'`);
+  console.log(`数据同步策略：优先读取 anomaly 表 baseline_* 字段`);
   console.log(`-----------------------------------------------`);
 });

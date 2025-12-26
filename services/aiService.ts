@@ -1,24 +1,17 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { AIAnalysis, OperationRecord } from "../types";
-import { DB_ANOMALIES } from "../constants";
+import { AIAnalysis, OperationRecord, SurgeryAnomaly } from "../types";
 
 export type AIEngine = 'gemini' | 'deepseek';
 
-/**
- * 获取首选 AI 引擎
- */
 export const getPreferredEngine = (): AIEngine => {
   if (typeof window !== 'undefined') {
     const savedEngine = localStorage.getItem('PREFERRED_AI_ENGINE');
     if (savedEngine === 'deepseek' || savedEngine === 'gemini') return savedEngine;
   }
-  return 'gemini'; // 默认使用 Gemini
+  return 'gemini'; 
 };
 
-/**
- * 获取 DeepSeek API Key
- */
 const getDeepSeekKey = () => {
   if (typeof window !== 'undefined') {
     return localStorage.getItem('DEEPSEEK_API_KEY') || "";
@@ -28,30 +21,28 @@ const getDeepSeekKey = () => {
 
 export async function analyzeSurgery(
   record: OperationRecord,
+  anomaly?: SurgeryAnomaly,
   requestedEngine?: AIEngine
 ): Promise<AIAnalysis & { reasoning?: string }> {
-  const anomaly = DB_ANOMALIES.find(a => a.operation_no === record.operation_no);
   const geminiApiKey = process.env.API_KEY;
   const engine = requestedEngine || getPreferredEngine();
   const deepseekKey = getDeepSeekKey();
 
-  // 1. 如果配置为使用 DeepSeek
   if (engine === 'deepseek') {
     if (deepseekKey && deepseekKey.length > 5) {
       return await callDeepSeekAPI(record, anomaly, deepseekKey);
     } else {
-      console.warn("⚠️ DeepSeek Key 未配置。已自动回退至 Gemini 3.0 Pro 推理模式。");
+      console.warn("⚠️ DeepSeek Key 未配置。已自动回退至 Gemini 推理模式。");
       return await callGeminiAPI(record, anomaly, geminiApiKey || "", true);
     }
   }
 
-  // 2. 默认使用 Gemini 标准模式 (Flash)
   if (!geminiApiKey || geminiApiKey.length < 5) {
     return {
       riskLevel: '低',
-      riskReasons: ['API 密钥未就绪'],
-      interventions: ['请在设置中配置密钥'],
-      summary: '系统当前处于本地演示模式，AI 推理功能暂未启用。'
+      riskReasons: ['AI 决策引擎未授权'],
+      interventions: ['请在设置中配置有效 API Key'],
+      summary: '当前处于离线规则引擎模式。AI 深度分析功能未启用。'
     };
   }
 
@@ -59,6 +50,7 @@ export async function analyzeSurgery(
 }
 
 async function callDeepSeekAPI(record: any, anomaly: any, apiKey: string): Promise<AIAnalysis & { reasoning?: string }> {
+  const isNoBaseline = anomaly?.anomaly_level === '无基准';
   try {
     const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
@@ -71,11 +63,11 @@ async function callDeepSeekAPI(record: any, anomaly: any, apiKey: string): Promi
         messages: [
           {
             role: "system",
-            content: "你是一个专业的医院手术室管理专家。分析手术异常并输出 JSON：riskLevel, riskReasons[], interventions[], summary。"
+            content: "你是一个专业的医院手术室管理专家。分析手术状态并输出 JSON：riskLevel, riskReasons[], interventions[], summary。"
           },
           {
             role: "user",
-            content: `分析：${record.operation_name}, 医生：${record.surgen_name}, 耗时：${anomaly?.actual_duration}min, 基线P90：${anomaly?.baseline_p90}min。`
+            content: `分析手术：${record.operation_name}, 医生：${record.surgen_name}, 实际耗时：${anomaly?.actual_duration || '未知'}分钟。${isNoBaseline ? '注意：该术式及医生组合暂无历史基准数据，请基于临床常识进行独立评估。' : `历史基线中位数：${anomaly?.baseline_median}分钟, 标准差：${anomaly?.baseline_std_dev}。`}`
           }
         ],
         response_format: { type: "json_object" }
@@ -89,26 +81,33 @@ async function callDeepSeekAPI(record: any, anomaly: any, apiKey: string): Promi
     
     return {
       ...content,
-      reasoning: data.choices[0].message.reasoning_content || "DeepSeek 正在思考..."
+      reasoning: data.choices[0].message.reasoning_content || "推理引擎思考中..."
     };
   } catch (error) {
-    console.error("DeepSeek 调用失败，切换至 Gemini 兜底:", error);
+    console.error("DeepSeek 调用失败:", error);
     return await callGeminiAPI(record, anomaly, process.env.API_KEY || "", true);
   }
 }
 
 async function callGeminiAPI(record: any, anomaly: any, apiKey: string, useReasoning = false): Promise<AIAnalysis & { reasoning?: string }> {
-  if (!apiKey) return { riskLevel: '低', riskReasons: ['Key Missing'], interventions: [], summary: '等待 API 配置...' };
+  if (!apiKey) return { riskLevel: '低', riskReasons: ['Key Missing'], interventions: [], summary: '等待配置...' };
   
   const ai = new GoogleGenAI({ apiKey });
   const modelName = useReasoning ? 'gemini-3-pro-preview' : 'gemini-3-flash-preview';
+  const isNoBaseline = anomaly?.anomaly_level === '无基准';
   
+  const prompt = `分析手术风险状况：
+  手术名称：${record.operation_name}
+  主刀医生：${record.surgen_name}
+  实际时长：${anomaly?.actual_duration || '未知'}
+  ${isNoBaseline ? '状态：此手术组合暂无历史基准参考数据' : `基线中位数：${anomaly?.baseline_median}, 基线标准差：${anomaly?.baseline_std_dev}`}`;
+
   try {
     const response = await ai.models.generateContent({
       model: modelName,
-      contents: `分析手术风险：[${record.operation_name}]，耗时 [${anomaly?.actual_duration}]，基线 [${anomaly?.baseline_p90}]。`,
+      contents: prompt,
       config: {
-        systemInstruction: "你是一个医疗 AI 助手。返回 JSON 格式分析结论。",
+        systemInstruction: "你是一个医疗 AI 助手。请根据手术耗时进行分析。如果没有基线参考，请结合临床常识给出风险评估（低/中/高）。返回 JSON。",
         responseMimeType: "application/json",
         ...(useReasoning ? { thinkingConfig: { thinkingBudget: 16384 } } : {}),
         responseSchema: {
@@ -126,6 +125,6 @@ async function callGeminiAPI(record: any, anomaly: any, apiKey: string, useReaso
 
     return JSON.parse(response.text || "{}");
   } catch (e) {
-    return { riskLevel: '低', riskReasons: ['AI 离线'], interventions: [], summary: '规则引擎判定：进度偏差中。' };
+    return { riskLevel: '低', riskReasons: ['AI 服务繁忙'], interventions: [], summary: '数据已加载，AI 分析受限，请人工核实进度。' };
   }
 }

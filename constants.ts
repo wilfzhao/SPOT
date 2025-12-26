@@ -32,45 +32,6 @@ export const DB_OPERATION_RECORDS: OperationRecord[] = [
     operation_start_time: '2024-10-24 09:15:00',
     operation_end_time: null,
     status: '术中'
-  },
-  {
-    operation_no: '20241024-003',
-    operation_date: '2024-10-24',
-    operation_room: '5号手术室',
-    operation_name: '胃大部切除术',
-    dept_name: '肿瘤外科',
-    diagnosis_name: '胃恶性肿瘤',
-    surgen_name: '张学良',
-    patient_in_time: '2024-10-24 10:00:00',
-    operation_start_time: '2024-10-24 10:30:00',
-    operation_end_time: null,
-    status: '术中'
-  },
-  {
-    operation_no: '20241024-004',
-    operation_date: '2024-10-24',
-    operation_room: '2号手术室',
-    operation_name: '阑尾切除术',
-    dept_name: '普外科',
-    diagnosis_name: '急性阑尾炎',
-    surgen_name: '刘勇',
-    patient_in_time: '2024-10-24 07:00:00',
-    operation_start_time: '2024-10-24 07:30:00',
-    operation_end_time: '2024-10-24 08:45:00',
-    status: '已完成'
-  },
-  {
-    operation_no: '20241024-005',
-    operation_date: '2024-10-24',
-    operation_room: '4号手术室',
-    operation_name: '冠状动脉旁路移植术',
-    dept_name: '心外科',
-    diagnosis_name: '冠心病',
-    surgen_name: '陈建国',
-    patient_in_time: '2024-10-24 06:30:00',
-    operation_start_time: '2024-10-24 07:00:00',
-    operation_end_time: '2024-10-24 11:30:00',
-    status: '已完成'
   }
 ];
 
@@ -79,56 +40,25 @@ export const DB_ANOMALIES: SurgeryAnomaly[] = [
     operation_no: '20241024-001',
     operation_name: '腹腔镜下胆囊切除术',
     actual_duration: 125,
-    baseline_avg: 60,
+    baseline_median: 55,
+    baseline_std_dev: 12,
     baseline_p80: 75,
     baseline_p90: 90,
-    deviation_rate: 108.33,
+    deviation_rate: 127.27,
     anomaly_level: '红灯',
-    anomaly_reason: '术中发现严重粘连，解剖结构辨识困难，耗时显著超过 P90 阈值'
+    anomaly_reason: '术中发现严重粘连，解剖结构辨识困难'
   },
   {
     operation_no: '20241024-002',
     operation_name: '全髋关节置换术',
     actual_duration: 85,
-    baseline_avg: 80,
+    baseline_median: 78,
+    baseline_std_dev: 15,
     baseline_p80: 95,
     baseline_p90: 110,
-    deviation_rate: 6.25,
+    deviation_rate: 8.97,
     anomaly_level: '正常',
     anomaly_reason: '进度符合预期'
-  },
-  {
-    operation_no: '20241024-003',
-    operation_name: '胃大部切除术',
-    actual_duration: 140,
-    baseline_avg: 120,
-    baseline_p80: 135,
-    baseline_p90: 150,
-    deviation_rate: 16.67,
-    anomaly_level: '黄灯',
-    anomaly_reason: '吻合口止血时间稍长，略微偏离平均基准'
-  },
-  {
-    operation_no: '20241024-004',
-    operation_name: '阑尾切除术',
-    actual_duration: 75,
-    baseline_avg: 45,
-    baseline_p80: 55,
-    baseline_p90: 65,
-    deviation_rate: 66.67,
-    anomaly_level: '红灯',
-    anomaly_reason: '实际耗时远超预计基准'
-  },
-  {
-    operation_no: '20241024-005',
-    operation_name: '冠状动脉旁路移植术',
-    actual_duration: 270,
-    baseline_avg: 300,
-    baseline_p80: 330,
-    baseline_p90: 360,
-    deviation_rate: -10.00,
-    anomaly_level: '正常',
-    anomaly_reason: '效率极高，提前完成'
   }
 ];
 
@@ -142,7 +72,6 @@ export const DEPT_RANKING = [
 export const PREDICTION_DATA = [
   { or: '1号', surgeon: '赵伟峰', procedure: '胆囊切除术', et: '11:45' },
   { or: '3号', surgeon: '林泽宏', procedure: '髋关节置换', et: '12:30' },
-  { or: '5号', surgeon: '张学良', procedure: '胃大部切除术', et: '13:15' },
 ];
 
 export const OPERATIONAL_STATS = {
