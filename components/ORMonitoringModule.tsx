@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { DataService } from '../services/dataService';
-import { OperationRecord, SurgeryAnomaly } from '../types';
+import { OperationRecord, SurgeryAnomaly, SurgeryTimelineSimulation } from '../types';
 import { AIAssistant } from './AIAssistant';
+import { PanoramicGantt } from './PanoramicGantt';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, Cell, ReferenceLine 
@@ -11,6 +12,7 @@ import {
 export const ORMonitoringModule: React.FC = () => {
   const [allRecords, setAllRecords] = useState<OperationRecord[]>([]);
   const [records, setRecords] = useState<OperationRecord[]>([]);
+  const [simulationData, setSimulationData] = useState<SurgeryTimelineSimulation[]>([]);
   const [anomalyMap, setAnomalyMap] = useState<Record<string, SurgeryAnomaly>>({});
   const [selectedOpNo, setSelectedOpNo] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -58,8 +60,14 @@ export const ORMonitoringModule: React.FC = () => {
     const initData = async () => {
       setIsLoading(true);
       try {
-        const liveRecords = await DataService.getOperationRecords();
+        const [liveRecords, simData] = await Promise.all([
+          DataService.getOperationRecords(),
+          DataService.getTimelineSimulation()
+        ]);
+
         setAllRecords(liveRecords);
+        setSimulationData(simData);
+
         const filteredRecords = liveRecords.filter(r => r.status?.trim() === '术中');
         
         const anomalyData: Record<string, SurgeryAnomaly> = {};
@@ -123,7 +131,10 @@ export const ORMonitoringModule: React.FC = () => {
   }, [currentAnomaly]);
 
   return (
-    <div className="flex flex-col gap-10 animate-in slide-in-from-right duration-500 pb-32">
+    <div className="flex flex-col animate-in slide-in-from-right duration-500 pb-32">
+      {/* 顶部全景甘特图 */}
+      <PanoramicGantt data={simulationData} />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* 数据核心看板 */}
         <div className="lg:col-span-2 min-w-0 bg-slate-900/40 border border-slate-800 p-8 rounded-[3rem] backdrop-blur-md relative shadow-2xl">
@@ -259,7 +270,7 @@ export const ORMonitoringModule: React.FC = () => {
         </div>
       </div>
 
-      <div className="w-full">
+      <div className="w-full mt-10">
         {selectedRecord && (
           <AIAssistant 
             key={selectedOpNo} 

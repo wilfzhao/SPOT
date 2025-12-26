@@ -1,5 +1,5 @@
 
-import { OperationRecord, SurgeryAnomaly } from './types';
+import { OperationRecord, SurgeryAnomaly, SurgeryTimelineSimulation } from './types';
 
 export const HOSPITAL_NAME = "联通数智医疗";
 export const PLATFORM_NAME = "手术全流程精准管理与分析预测平台";
@@ -59,6 +59,69 @@ export const DB_ANOMALIES: SurgeryAnomaly[] = [
     deviation_rate: 8.97,
     anomaly_level: '正常',
     anomaly_reason: '进度符合预期'
+  }
+];
+
+export const DB_SIMULATION_DATA: SurgeryTimelineSimulation[] = [
+  {
+    operation_no: '20241024-001',
+    operation_room: 'OR-01',
+    operation_name: '胆囊切除术',
+    surgen_name: '赵伟峰',
+    sequence_no: 0,
+    est_start_time: '2024-10-24 09:00:00',
+    est_end_time: '2024-10-24 11:30:00',
+    status_type: 'CURRENT',
+    patient_tags: ['糖尿病', '高血压'],
+    risk_tags: ['术中粘连风险']
+  },
+  {
+    operation_no: '20241024-101',
+    operation_room: 'OR-01',
+    operation_name: '疝修补术',
+    surgen_name: '赵伟峰',
+    sequence_no: 1,
+    est_start_time: '2024-10-24 12:00:00',
+    est_end_time: '2024-10-24 13:15:00',
+    status_type: 'PENDING',
+    patient_tags: [],
+    risk_tags: []
+  },
+  {
+    operation_no: '20241024-002',
+    operation_room: 'OR-02',
+    operation_name: '全髋置换术',
+    surgen_name: '林泽宏',
+    sequence_no: 0,
+    est_start_time: '2024-10-24 09:15:00',
+    est_end_time: '2024-10-24 10:45:00',
+    status_type: 'CURRENT',
+    patient_tags: ['肥胖'],
+    risk_tags: []
+  },
+  {
+    operation_no: '20241024-201',
+    operation_room: 'OR-02',
+    operation_name: '膝关节镜',
+    surgen_name: '林泽宏',
+    sequence_no: 1,
+    est_start_time: '2024-10-24 11:30:00',
+    est_end_time: '2024-10-24 12:45:00',
+    status_type: 'PENDING',
+    patient_tags: [],
+    risk_tags: ['夜班冲突风险']
+  },
+  {
+    operation_no: '20241024-003',
+    operation_room: 'OR-03',
+    operation_name: '阑尾切除术',
+    surgen_name: '王小明',
+    sequence_no: 0,
+    est_start_time: '2024-10-24 08:30:00',
+    est_end_time: '2024-10-24 10:00:00',
+    status_type: 'CURRENT',
+    patient_tags: [],
+    risk_tags: []
   }
 ];
 

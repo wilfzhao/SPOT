@@ -1,52 +1,53 @@
 
-import { OperationRecord, SurgeryAnomaly } from '../types';
-import { DB_OPERATION_RECORDS, DB_ANOMALIES, API_BASE_URL } from '../constants';
+import { OperationRecord, SurgeryAnomaly, SurgeryTimelineSimulation } from '../types';
+import { DB_OPERATION_RECORDS, DB_ANOMALIES, DB_SIMULATION_DATA, API_BASE_URL } from '../constants';
 
-const FETCH_TIMEOUT = 3000; // 3秒超时
+const FETCH_TIMEOUT = 5000;
 
-async function fetchWithTimeout(url: string, options = {}) {
+function getFullUrl(path: string): string {
+  const base = API_BASE_URL.replace(/\/+$/, '');
+  const sub = path.replace(/^\/+/, '');
+  return `${base}/${sub}`;
+}
+
+async function safeFetch<T>(path: string, mockData: T): Promise<T> {
+  const url = getFullUrl(path);
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
   try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal
-    });
+    const response = await fetch(url, { signal: controller.signal });
     clearTimeout(id);
-    return response;
-  } catch (err) {
+
+    if (!response.ok) {
+      console.error(`[DataService] -> 接口失败 (${response.status}): ${url}`);
+      throw new Error(`HTTP_${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log(`[DataService] -> 接口成功 (${path}), 数据量: ${Array.isArray(data) ? data.length : 'Object'}`);
+    return data;
+  } catch (err: any) {
     clearTimeout(id);
-    throw err;
+    console.warn(`[DataService] -> 降级策略触发 (${path}):`, err.message);
+    return mockData;
   }
 }
 
 export const DataService = {
-  // 获取所有手术记录
   async getOperationRecords(): Promise<OperationRecord[]> {
-    try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/operations`);
-      if (!response.ok) throw new Error('API Response Error');
-      return await response.json();
-    } catch (error) {
-      console.warn("无法连接到后端 API 或请求超时，正在使用模拟数据:", error);
-      return new Promise((resolve) => {
-        setTimeout(() => resolve(DB_OPERATION_RECORDS), 300);
-      });
-    }
+    return safeFetch('/operations', DB_OPERATION_RECORDS);
   },
 
-  // 获取特定手术的异常分析
   async getAnomalyByNo(opNo: string): Promise<SurgeryAnomaly | undefined> {
-    try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/anomalies/${opNo}`);
-      if (!response.ok) throw new Error('API Response Error');
-      return await response.json();
-    } catch (error) {
-      console.warn(`无法获取手术 ${opNo} 的真实分析，正在使用模拟数据`);
-      return new Promise((resolve) => {
-        const anomaly = DB_ANOMALIES.find(a => a.operation_no === opNo);
-        setTimeout(() => resolve(anomaly), 200);
-      });
-    }
+    const result = await safeFetch(`/anomalies/${opNo}`, null);
+    if (!result) return DB_ANOMALIES.find(a => a.operation_no === opNo);
+    return result as any;
+  },
+
+  async getTimelineSimulation(): Promise<SurgeryTimelineSimulation[]> {
+    console.log('[DataService] 正在同步手术推演大模型数据...');
+    const result = await safeFetch('/surgery-simulation', DB_SIMULATION_DATA);
+    return result;
   }
 };

@@ -45,6 +45,20 @@ export interface SurgeryAnomaly {
   anomaly_reason: string;
 }
 
+// 对应 view_surgery_timeline_simulation
+export interface SurgeryTimelineSimulation {
+  operation_no: string;
+  operation_room: string;
+  operation_name: string;
+  surgen_name: string;
+  sequence_no: number;
+  est_start_time: string;
+  est_end_time: string;
+  status_type: 'CURRENT' | 'PENDING';
+  patient_tags: string[];
+  risk_tags: string[];
+}
+
 export type ModuleType = 
   | 'dashboard' 
   | 'efficiency' 
